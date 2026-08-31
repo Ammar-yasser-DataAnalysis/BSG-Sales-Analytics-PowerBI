@@ -197,7 +197,7 @@ DimEmployee ──── FactSale ──── DimStockItem
 <img src="https://github.com/Ammar-yasser-DataAnalysis/BSG-Sales-Analytics-PowerBI/blob/main/Srategic%20Market%20Analysis.jpg">
 <img src="https://github.com/Ammar-yasser-DataAnalysis/BSG-Sales-Analytics-PowerBI/blob/main/Data%20Quality%20%26%20Audit.jpg">
 <img src="https://github.com/Ammar-yasser-DataAnalysis/BSG-Sales-Analytics-PowerBI/blob/main/Conclusion.jpg">
----
+
 
 ## 🔍 Data Quality Findings
 
@@ -235,33 +235,6 @@ BSG-Sales-Analytics-Dashboard/
     ├── DimStockItem.csv
     └── FactSale.csv
 ```
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Power BI Desktop (latest version)
-- Dataset files in a local folder
-
-### Steps
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-username/BSG-Sales-Analytics-Dashboard.git
-   ```
-
-2. **Update data source path**
-   In Power BI Desktop → Transform Data → Data Source Settings → update the folder path to your local dataset location.
-
-3. **Refresh data**
-   Click **Home → Refresh All** to load the data.
-
-4. **Explore the dashboard**
-   Navigate between the 3 pages using the arrows on the dashboard.
-
----
-
 ## 💡 Key Business Insights
 
 - **California** is the top state by both profit ($2.09M) and city count — priority market
