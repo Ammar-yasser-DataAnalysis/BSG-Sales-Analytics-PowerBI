@@ -175,9 +175,9 @@ DimEmployee ──── FactSale ──── DimStockItem
                    USA Date (holidays reference)
                    Measure (DAX measures table)
 ```
----
 ## Data Model (Star Schema) Screenshots (Click to enlarge) :
 <img src="https://github.com/Ammar-yasser-DataAnalysis/BSG-Sales-Analytics-PowerBI/blob/main/Data%20Modeling.jpg">
+
 ---
 
 | Table | Type | Key |
