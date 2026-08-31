@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Sales Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#15171f; --card:#1f2230; --border:#2f3242; --muted:#9aa0b4; --fg:#f1f3f9;
+    --c1:#3ddc97; --c2:#f59e3a; --c3:#a78bfa; --c4:#60a5fa; --c5:#f472b6;
+    --grad: radial-gradient(ellipse at top left, rgba(61,220,151,.18), transparent 60%),
+            radial-gradient(ellipse at bottom right, rgba(167,139,250,.15), transparent 60%);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Inter",sans-serif;-webkit-font-smoothing:antialiased}
+  body{background:var(--grad), var(--bg);min-height:100vh}
+  .wrap{max-width:1400px;margin:0 auto;padding:20px 16px 40px;}
+  header h1{font-family:"Space Grotesk",sans-serif;font-size:32px;margin:8px 0 4px;letter-spacing:-.02em}
+  header p{color:var(--muted);font-size:13px;margin:0}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid rgba(61,220,151,.3);background:rgba(61,220,151,.1);color:var(--c1);border-radius:999px;font-size:11px;font-weight:600}
+  .filters{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 20px;background:var(--card);border:1px solid var(--border);padding:4px;border-radius:12px;width:fit-content}
+  .filters button{background:transparent;border:none;color:var(--muted);padding:6px 12px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:.2s}
+  .filters button.active{background:var(--c1);color:#0e1a14;box-shadow:0 0 24px -6px rgba(61,220,151,.5)}
+  .grid{display:grid;gap:14px}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  @media(min-width:720px){.kpis{grid-template-columns:repeat(4,1fr)}}
+  .row2{grid-template-columns:1fr}
+  @media(min-width:900px){.row2{grid-template-columns:2fr 1fr}}
+  .row2b{grid-template-columns:1fr}
+  @media(min-width:900px){.row2b{grid-template-columns:1fr 1fr}}
+  .row3{grid-template-columns:1fr}
+  @media(min-width:900px){.row3{grid-template-columns:repeat(3,1fr)}}
+  section{margin-bottom:16px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 8px 32px -12px rgba(0,0,0,.4);position:relative;overflow:hidden}
+  .card h3{margin:0 0 2px;font-family:"Space Grotesk",sans-serif;font-size:15px}
+  .card .sub{color:var(--muted);font-size:11px;margin-bottom:14px}
+  .kpi .label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+  .kpi .val{font-family:"Space Grotesk",sans-serif;font-size:26px;font-weight:700;margin-top:6px}
+  .kpi .sub2{font-size:11px;color:var(--muted);margin-top:4px}
+  .kpi .glow{position:absolute;right:-20px;top:-20px;width:120px;height:120px;border-radius:50%;filter:blur(30px);opacity:.5}
+  canvas{max-width:100%}
+  .chart-wrap{position:relative;height:260px}
+  .chart-tall{height:300px}
+  .bars .row{margin-bottom:10px;font-size:12px}
+  .bars .row .top{display:flex;justify-content:space-between;margin-bottom:4px;gap:8px}
+  .bars .row .top .name{display:flex;gap:8px;min-width:0;align-items:center}
+  .bars .row .top .name .rk{color:var(--muted);font-family:ui-monospace,monospace}
+  .bars .row .top .name .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+  .bars .row .top .v{font-family:ui-monospace,monospace;font-weight:600;flex-shrink:0}
+  .bars .row .bar{height:6px;background:#2a2e3e;border-radius:99px;overflow:hidden}
+  .bars .row .bar > div{height:100%;background:linear-gradient(90deg,var(--c1),var(--c2));border-radius:99px}
+  .bars.alt .row .bar > div{background:linear-gradient(90deg,var(--c3),var(--c4))}
+  .seg{display:inline-flex;background:#2a2e3e;border:1px solid var(--border);border-radius:8px;padding:2px;font-size:11px}
+  .seg button{background:transparent;border:none;color:var(--muted);padding:4px 10px;border-radius:6px;cursor:pointer;text-transform:capitalize}
+  .seg button.active{background:var(--c1);color:#0e1a14}
+  .head{display:flex;justify-content:space-between;align-items:start;gap:8px;margin-bottom:12px}
+  .head .titles h3{margin-bottom:2px}
+  .head .titles .sub{margin:0}
+  footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--border);color:var(--muted);font-size:11px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <span class="badge">● Live Sales Intelligence</span>
+  <h1>Sales Dashboard</h1>
+  <p id="sub"></p>
+  <div class="filters" id="years"></div>
+</header>
+
+<section class="grid kpis" id="kpis"></section>
+
+<section class="grid row2">
+  <div class="card">
+    <div class="head">
+      <div class="titles"><h3>Monthly Trend</h3><p class="sub" id="trendSub">Revenue over time</p></div>
+      <div class="seg" id="metric">
+        <button data-m="revenue" class="active">revenue</button>
+        <button data-m="profit">profit</button>
+        <button data-m="orders">orders</button>
+      </div>
+    </div>
+    <div class="chart-wrap"><canvas id="trend"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>By Category</h3><p class="sub">Revenue share</p>
+    <div class="chart-wrap"><canvas id="cat"></canvas></div>
+  </div>
+</section>
+
+<section class="grid row2">
+  <div class="card">
+    <h3>Revenue by Territory</h3><p class="sub">Stacked monthly contribution</p>
+    <div class="chart-wrap chart-tall"><canvas id="terrStack"></canvas></div>
+  </div>
+  <div class="card">
+    <h3>Territory Totals</h3><p class="sub">All-time revenue</p>
+    <div class="chart-wrap chart-tall"><canvas id="terrBar"></canvas></div>
+  </div>
+</section>
+
+<section class="grid row2b">
+  <div class="card">
+    <h3>Top Customers</h3><p class="sub">Ranked by revenue</p>
+    <div class="bars" id="custBars"></div>
+  </div>
+  <div class="card">
+    <h3>Top Stock Items</h3><p class="sub">Best-selling products</p>
+    <div class="bars alt" id="itemBars"></div>
+  </div>
+</section>
+
+<section class="grid row3">
+  <div class="card"><h3>Top States</h3><p class="sub">Revenue by state</p>
+    <div class="chart-wrap"><canvas id="states"></canvas></div></div>
+  <div class="card"><h3>Top Salespeople</h3><p class="sub">Revenue generated</p>
+    <div class="chart-wrap"><canvas id="emp"></canvas></div></div>
+  <div class="card"><h3>Buying Groups</h3><p class="sub">Revenue by group</p>
+    <div class="chart-wrap"><canvas id="bg"></canvas></div></div>
+</section>
+
+<section class="grid row2b">
+  <div class="card"><h3>Quarterly Performance</h3><p class="sub">Revenue vs Profit</p>
+    <div class="chart-wrap"><canvas id="qtr"></canvas></div></div>
+  <div class="card"><h3>Yearly Trend</h3><p class="sub">Revenue, profit & orders</p>
+    <div class="chart-wrap"><canvas id="yr"></canvas></div></div>
+</section>
+
+
+<section class="grid row3" style="margin-top:24px">
+  <div class="card"><h3>🔥 Key Highlights</h3><p class="sub">What the data reveals</p>
+    <ul style="padding-left:18px;margin:0;font-size:13px;line-height:1.6;color:#cfd3e2">
+      <li><b style="color:#f1f3f9">$22.86M revenue</b> across 4 years (2013–2016) with a healthy <b style="color:#3ddc97">43.4% profit margin</b>.</li>
+      <li><b style="color:#f1f3f9">N/A brand</b> dominates sales — most stock items lack brand assignment.</li>
+      <li>Top customer drives a disproportionate share — heavy <b style="color:#f1f3f9">customer concentration risk</b>.</li>
+      <li>Q4 spikes suggest strong <b style="color:#f1f3f9">holiday seasonality</b>.</li>
+    </ul></div>
+  <div class="card"><h3>⚠️ Outliers Detected</h3><p class="sub">Statistically extreme records</p>
+    <ul style="padding-left:18px;margin:0;font-size:13px;line-height:1.6;color:#cfd3e2">
+      <li><b style="color:#f1f3f9">2,326 sales (8.8%)</b> exceed the IQR upper fence of $2,318. Max single sale: <b style="color:#f1f3f9">$21,838</b> vs median <b style="color:#f1f3f9">$260</b> — 84× typical.</li>
+      <li><b style="color:#f1f3f9">566 transactions (2.1%)</b> have <span style="color:#f87171;font-weight:600">negative profit</span> — discounted, returned or mis-priced.</li>
+      <li>Quantity spikes up to <b style="color:#f1f3f9">360 units</b> per line — bulk orders skew averages.</li>
+      <li>Top 5 highest-value invoices are the same SKU @ $1,899 × 10 — a high-ticket recurring product.</li>
+    </ul></div>
+  <div class="card"><h3>🕳️ Missing Values</h3><p class="sub">Data quality gaps</p>
+    <ul style="padding-left:18px;margin:0;font-size:13px;line-height:1.6;color:#cfd3e2">
+      <li><b style="color:#f1f3f9">9,077 of 26,397 sales (34.4%)</b> have <code style="background:#2a2e3e;padding:1px 5px;border-radius:4px">Customer Key = 0</code> — anonymous walk-ins.</li>
+      <li><b style="color:#f1f3f9">605 of 673 items (90%)</b> missing <b>Brand</b>; <b>312 (46%)</b> missing <b>Color</b>; <b>656 (97%)</b> missing <b>Barcode</b>.</li>
+      <li><b style="color:#f1f3f9">3,734 of 13,028 cities (28.7%)</b> report population = 0.</li>
+      <li><b style="color:#f1f3f9">13 invoices</b> missing Delivery Date / Duration — undelivered or cancelled.</li>
+    </ul></div>
+</section>
+<section style="margin-top:18px">
+  <div class="card" style="background:linear-gradient(135deg,rgba(61,220,151,.12),#1f2230,rgba(245,158,58,.10));border-color:rgba(61,220,151,.35)">
+    <h3 style="font-size:20px">📌 Conclusion</h3>
+    <p style="color:#cfd3e2;font-size:13.5px;line-height:1.7;margin:0">
+      The business is <b style="color:#f1f3f9">profitable and growing</b>, but the data warehouse hides material risks behind aggregate numbers.
+      A third of sales are <b style="color:#f1f3f9">anonymous</b>, nearly all stock items lack <b style="color:#f1f3f9">brand metadata</b>, and ~9% of orders are
+      statistical <b style="color:#f1f3f9">outliers</b> distorting averages. Before trusting customer segmentation or product analytics, the team should
+      (1) backfill <b style="color:#f1f3f9">Customer Key = 0</b> records, (2) normalize <b style="color:#f1f3f9">Brand / Color / Barcode</b> in DimStockItem, and
+      (3) flag the <b style="color:#f1f3f9">566 negative-profit transactions</b> for pricing review. Reporting median-based KPIs alongside means will give a
+      far more honest picture of the typical sale.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <span id="f1"></span><span id="f2"></span>
+</footer>
+</div>
+
+<script>
+const DATA = {"kpis": {"revenue": 22855077.65, "profit": 9923891.7, "orders": 26397, "quantity": 1028670, "customers": 49, "items": 227, "avgOrder": 865.8210270106451, "margin": 0.4342094939239902}, "monthly": [{"Month": "2013-01", "revenue": 464011.95, "profit": 203821.6, "quantity": 22223, "orders": 644}, {"Month": "2013-02", "revenue": 374311.59, "profit": 161465.6, "quantity": 16749, "orders": 421}, {"Month": "2013-03", "revenue": 469153.05, "profit": 213303.75, "quantity": 20440, "orders": 527}, {"Month": "2013-04", "revenue": 580971.12, "profit": 246955.85, "quantity": 25354, "orders": 670}, {"Month": "2013-05", "revenue": 602087.2, "profit": 269845.35, "quantity": 27148, "orders": 677}, {"Month": "2013-06", "revenue": 576924.66, "profit": 241102.6, "quantity": 26513, "orders": 650}, {"Month": "2013-07", "revenue": 523205.46, "profit": 226203.35, "quantity": 27754, "orders": 656}, {"Month": "2013-08", "revenue": 449198.81, "profit": 188158.7, "quantity": 23240, "orders": 555}, {"Month": "2013-09", "revenue": 493244.5, "profit": 221995.95, "quantity": 20394, "orders": 524}, {"Month": "2013-10", "revenue": 557645.49, "profit": 233555.55, "quantity": 23497, "orders": 627}, {"Month": "2013-11", "revenue": 491251.25, "profit": 220238.75, "quantity": 22436, "orders": 586}, {"Month": "2013-12", "revenue": 464643.4, "profit": 211093.85, "quantity": 22064, "orders": 599}, {"Month": "2014-01", "revenue": 551543.86, "profit": 246265.35, "quantity": 24260, "orders": 686}, {"Month": "2014-02", "revenue": 464565.53, "profit": 198809.6, "quantity": 19875, "orders": 539}, {"Month": "2014-03", "revenue": 638488.05, "profit": 276855.8, "quantity": 27868, "orders": 678}, {"Month": "2014-04", "revenue": 591333.7, "profit": 255261.25, "quantity": 25203, "orders": 664}, {"Month": "2014-05", "revenue": 640960.92, "profit": 274096.15, "quantity": 28059, "orders": 683}, {"Month": "2014-06", "revenue": 449573.73, "profit": 201648.55, "quantity": 22371, "orders": 570}, {"Month": "2014-07", "revenue": 660248.63, "profit": 291323.95, "quantity": 31984, "orders": 787}, {"Month": "2014-08", "revenue": 477720.04, "profit": 199110.55, "quantity": 20047, "orders": 545}, {"Month": "2014-09", "revenue": 547215.74, "profit": 239472.75, "quantity": 22701, "orders": 604}, {"Month": "2014-10", "revenue": 590079.96, "profit": 258499.25, "quantity": 27228, "orders": 701}, {"Month": "2014-11", "revenue": 549573.41, "profit": 229828.8, "quantity": 23129, "orders": 621}, {"Month": "2014-12", "revenue": 558633.98, "profit": 236886.35, "quantity": 26223, "orders": 642}, {"Month": "2015-01", "revenue": 560422.11, "profit": 247653.3, "quantity": 26220, "orders": 626}, {"Month": "2015-02", "revenue": 647839.7, "profit": 282044.15, "quantity": 25667, "orders": 691}, {"Month": "2015-03", "revenue": 642430.34, "profit": 282140.3, "quantity": 27150, "orders": 674}, {"Month": "2015-04", "revenue": 675347.59, "profit": 297920.95, "quantity": 26615, "orders": 676}, {"Month": "2015-05", "revenue": 562504.29, "profit": 241829.2, "quantity": 23965, "orders": 634}, {"Month": "2015-06", "revenue": 606479.1, "profit": 251261.25, "quantity": 22368, "orders": 638}, {"Month": "2015-07", "revenue": 687450.14, "profit": 295476.3, "quantity": 31431, "orders": 811}, {"Month": "2015-08", "revenue": 484458.94, "profit": 209914.5, "quantity": 21799, "orders": 591}, {"Month": "2015-09", "revenue": 596601.98, "profit": 256307.4, "quantity": 26475, "orders": 750}, {"Month": "2015-10", "revenue": 636521.4400000001, "profit": 269766.9, "quantity": 27124, "orders": 729}, {"Month": "2015-11", "revenue": 507114.92, "profit": 223922.35, "quantity": 25782, "orders": 661}, {"Month": "2015-12", "revenue": 692864.09, "profit": 303845.15, "quantity": 29549, "orders": 800}, {"Month": "2016-01", "revenue": 610762.89, "profit": 275904.95, "quantity": 30493, "orders": 656}, {"Month": "2016-02", "revenue": 500290.16, "profit": 213305.1, "quantity": 22418, "orders": 563}, {"Month": "2016-03", "revenue": 578025.51, "profit": 256371.75, "quantity": 30030, "orders": 694}, {"Month": "2016-04", "revenue": 488739.76, "profit": 217128.35, "quantity": 26258, "orders": 657}, {"Month": "2016-05", "revenue": 610638.66, "profit": 253300.55, "quantity": 28566, "orders": 690}], "quarterly": [{"Quarter": "2013Q1", "revenue": 1307476.59, "profit": 578590.95, "quantity": 59412, "orders": 1592}, {"Quarter": "2013Q2", "revenue": 1759982.98, "profit": 757903.8, "quantity": 79015, "orders": 1997}, {"Quarter": "2013Q3", "revenue": 1465648.77, "profit": 636358.0, "quantity": 71388, "orders": 1735}, {"Quarter": "2013Q4", "revenue": 1513540.14, "profit": 664888.15, "quantity": 67997, "orders": 1812}, {"Quarter": "2014Q1", "revenue": 1654597.44, "profit": 721930.75, "quantity": 72003, "orders": 1903}, {"Quarter": "2014Q2", "revenue": 1681868.35, "profit": 731005.95, "quantity": 75633, "orders": 1917}, {"Quarter": "2014Q3", "revenue": 1685184.41, "profit": 729907.25, "quantity": 74732, "orders": 1936}, {"Quarter": "2014Q4", "revenue": 1698287.35, "profit": 725214.4, "quantity": 76580, "orders": 1964}, {"Quarter": "2015Q1", "revenue": 1850692.15, "profit": 811837.75, "quantity": 79037, "orders": 1991}, {"Quarter": "2015Q2", "revenue": 1844330.98, "profit": 791011.4, "quantity": 72948, "orders": 1948}, {"Quarter": "2015Q3", "revenue": 1768511.06, "profit": 761698.2, "quantity": 79705, "orders": 2152}, {"Quarter": "2015Q4", "revenue": 1836500.45, "profit": 797534.4, "quantity": 82455, "orders": 2190}, {"Quarter": "2016Q1", "revenue": 1689078.56, "profit": 745581.8, "quantity": 82941, "orders": 1913}, {"Quarter": "2016Q2", "revenue": 1099378.42, "profit": 470428.9, "quantity": 54824, "orders": 1347}], "yearly": [{"Year": 2013, "revenue": 6046648.48, "profit": 2637740.9, "quantity": 277812, "orders": 7136}, {"Year": 2014, "revenue": 6719937.55, "profit": 2908058.35, "quantity": 298948, "orders": 7720}, {"Year": 2015, "revenue": 7300034.64, "profit": 3162081.75, "quantity": 314145, "orders": 8281}, {"Year": 2016, "revenue": 2788456.98, "profit": 1216010.7, "quantity": 137765, "orders": 3260}], "byCategory": [{"Category": "Novelty Shop", "revenue": 15073201.32, "profit": 6495284.9, "quantity": 672198, "orders": 17320}], "byTerritory": [{"Sales Territory": "Far West", "revenue": 22855077.65, "profit": 9923891.7, "quantity": 1028670, "orders": 26397}], "byState": [{"State Province": "California", "revenue": 10153238.9, "profit": 4434686.05, "quantity": 461064, "orders": 11871}, {"State Province": "Washington", "revenue": 4859724.86, "profit": 2093723.7, "quantity": 210392, "orders": 5419}, {"State Province": "Alaska", "revenue": 3451301.88, "profit": 1484469.75, "quantity": 159538, "orders": 4079}, {"State Province": "Oregon", "revenue": 2588197.05, "profit": 1121762.9, "quantity": 112041, "orders": 2828}, {"State Province": "Nevada", "revenue": 1438300.19, "profit": 627297.3, "quantity": 70342, "orders": 1784}, {"State Province": "Hawaii", "revenue": 364314.77, "profit": 161952.0, "quantity": 15293, "orders": 416}], "byCountry": [{"Country": "United States", "revenue": 22855077.65, "profit": 9923891.7, "quantity": 1028670, "orders": 26397}], "byBuyingGroup": [{"Buying Group": "Tailspin Toys", "revenue": 9263495.57, "profit": 3975493.15, "quantity": 418373, "orders": 10907}, {"Buying Group": "Wingtip Toys", "revenue": 5809705.75, "profit": 2519791.75, "quantity": 253825, "orders": 6413}], "topCustomers": [{"Customer": "Unknown", "revenue": 7781876.33, "profit": 3428606.8, "quantity": 356472, "orders": 9077}, {"Customer": "Wingtip Toys (San Jacinto, CA)", "revenue": 408524.95, "profit": 185158.65, "quantity": 14870, "orders": 398}, {"Customer": "Tailspin Toys (Fieldbrook, CA)", "revenue": 395482.71, "profit": 163720.6, "quantity": 17297, "orders": 405}, {"Customer": "Wingtip Toys (Wapinitia, OR)", "revenue": 394690.76, "profit": 163084.6, "quantity": 14402, "orders": 372}, {"Customer": "Wingtip Toys (Haycock, AK)", "revenue": 377386.35, "profit": 167999.45, "quantity": 14640, "orders": 406}, {"Customer": "Wingtip Toys (Knights Landing, CA)", "revenue": 376499.05, "profit": 161495.3, "quantity": 14098, "orders": 412}, {"Customer": "Tailspin Toys (Placer, OR)", "revenue": 369625.73, "profit": 156166.05, "quantity": 17120, "orders": 396}, {"Customer": "Wingtip Toys (Kapa'a, HI)", "revenue": 364314.77, "profit": 161952.0, "quantity": 15293, "orders": 416}, {"Customer": "Tailspin Toys (Sekiu, WA)", "revenue": 361979.92, "profit": 155986.45, "quantity": 17826, "orders": 432}, {"Customer": "Tailspin Toys (South Laguna, CA)", "revenue": 361850.63, "profit": 159068.0, "quantity": 11146, "orders": 314}, {"Customer": "Tailspin Toys (Malott, WA)", "revenue": 353095.22000000003, "profit": 152722.1, "quantity": 14212, "orders": 357}, {"Customer": "Wingtip Toys (Lake Davis, CA)", "revenue": 351162.24, "profit": 160181.6, "quantity": 16028, "orders": 383}, {"Customer": "Tailspin Toys (Upper Preston, WA)", "revenue": 350717.35, "profit": 148768.8, "quantity": 13209, "orders": 348}, {"Customer": "Tailspin Toys (Kerby, OR)", "revenue": 348995.7, "profit": 148915.45, "quantity": 14951, "orders": 386}, {"Customer": "Tailspin Toys (Koontzville, WA)", "revenue": 344272.38, "profit": 146448.2, "quantity": 14745, "orders": 382}], "topItems": [{"Stock Item": "Air cushion machine (Blue)", "revenue": 1378009.35, "profit": 478929.0, "quantity": 631, "orders": 113}, {"Stock Item": "10 mm Anti static bubble wrap (Blue) 50m", "revenue": 996187.5, "profit": 472500.0, "quantity": 8750, "orders": 147}, {"Stock Item": "20 mm Double sided bubble wrap 50m", "revenue": 909144.0, "profit": 673440.0, "quantity": 7320, "orders": 129}, {"Stock Item": "32 mm Double sided bubble wrap 50m", "revenue": 884856.0, "profit": 364110.0, "quantity": 6870, "orders": 120}, {"Stock Item": "32 mm Anti static bubble wrap (Blue) 50m", "revenue": 725707.5, "profit": 348580.0, "quantity": 6010, "orders": 108}, {"Stock Item": "10 mm Double sided bubble wrap 50m", "revenue": 696727.5, "profit": 282730.0, "quantity": 5770, "orders": 107}, {"Stock Item": "20 mm Anti static bubble wrap (Blue) 50m", "revenue": 675648.0, "profit": 270720.0, "quantity": 5760, "orders": 107}, {"Stock Item": "Void fill 400 L bag (White) 400L", "revenue": 466325.0, "profit": 194640.0, "quantity": 8110, "orders": 141}, {"Stock Item": "32 mm Anti static bubble wrap (Blue) 20m", "revenue": 414000.0, "profit": 187500.0, "quantity": 7500, "orders": 140}, {"Stock Item": "20 mm Anti static bubble wrap (Blue) 20m", "revenue": 356040.0, "profit": 165120.0, "quantity": 6880, "orders": 124}, {"Stock Item": "10 mm Anti static bubble wrap (Blue) 20m", "revenue": 349692.0, "profit": 137560.0, "quantity": 7240, "orders": 134}, {"Stock Item": "Void fill 300 L bag (White) 300L", "revenue": 304031.25, "profit": 137475.0, "quantity": 7050, "orders": 122}, {"Stock Item": "32 mm Double sided bubble wrap 20m", "revenue": 303381.5, "profit": 163990.0, "quantity": 7130, "orders": 134}, {"Stock Item": "Ride on big wheel monster truck (Black) 1/12 scale", "revenue": 256300.5, "profit": 90440.0, "quantity": 646, "orders": 121}, {"Stock Item": "Tape dispenser (Blue)", "revenue": 252080.0, "profit": 102750.0, "quantity": 6850, "orders": 127}], "topEmployees": [{"Employee": "Sophia Hinton", "revenue": 2551930.3, "profit": 1087989.9, "quantity": 105316, "orders": 2749}, {"Employee": "Lily Code", "revenue": 2428970.75, "profit": 1048804.05, "quantity": 105992, "orders": 2729}, {"Employee": "Kayla Woodcock", "revenue": 2393145.69, "profit": 1027053.5, "quantity": 107613, "orders": 2738}, {"Employee": "Taj Shand", "revenue": 2309299.38, "profit": 1005794.15, "quantity": 106208, "orders": 2570}, {"Employee": "Archer Lamble", "revenue": 2305127.22, "profit": 1010010.1, "quantity": 103800, "orders": 2665}, {"Employee": "Hudson Hollinworth", "revenue": 2280644.25, "profit": 982841.95, "quantity": 99646, "orders": 2641}, {"Employee": "Hudson Onslow", "revenue": 2202359.07, "profit": 982334.45, "quantity": 100471, "orders": 2573}, {"Employee": "Amy Trefl", "revenue": 2173148.75, "profit": 951364.8, "quantity": 100832, "orders": 2663}, {"Employee": "Anthony Grosse", "revenue": 2154119.3, "profit": 938491.55, "quantity": 98267, "orders": 2462}, {"Employee": "Jack Potter", "revenue": 2056332.94, "profit": 889207.25, "quantity": 100525, "orders": 2607}], "byBrand": [{"Brand": "Northwind", "revenue": 1911817.5, "profit": 681491.0, "quantity": 12055, "orders": 2221}], "yearlyByCategory": [{"Year": 2013, "Category": "Novelty Shop", "revenue": 4058364.11}, {"Year": 2014, "Category": "Novelty Shop", "revenue": 4500629.97}, {"Year": 2015, "Category": "Novelty Shop", "revenue": 4709362.89}, {"Year": 2016, "Category": "Novelty Shop", "revenue": 1804844.35}], "monthlyByTerritory": [{"Month": "2013-01", "Sales Territory": "Far West", "revenue": 464011.95}, {"Month": "2013-02", "Sales Territory": "Far West", "revenue": 374311.59}, {"Month": "2013-03", "Sales Territory": "Far West", "revenue": 469153.05}, {"Month": "2013-04", "Sales Territory": "Far West", "revenue": 580971.12}, {"Month": "2013-05", "Sales Territory": "Far West", "revenue": 602087.2}, {"Month": "2013-06", "Sales Territory": "Far West", "revenue": 576924.66}, {"Month": "2013-07", "Sales Territory": "Far West", "revenue": 523205.46}, {"Month": "2013-08", "Sales Territory": "Far West", "revenue": 449198.81}, {"Month": "2013-09", "Sales Territory": "Far West", "revenue": 493244.5}, {"Month": "2013-10", "Sales Territory": "Far West", "revenue": 557645.49}, {"Month": "2013-11", "Sales Territory": "Far West", "revenue": 491251.25}, {"Month": "2013-12", "Sales Territory": "Far West", "revenue": 464643.4}, {"Month": "2014-01", "Sales Territory": "Far West", "revenue": 551543.86}, {"Month": "2014-02", "Sales Territory": "Far West", "revenue": 464565.53}, {"Month": "2014-03", "Sales Territory": "Far West", "revenue": 638488.05}, {"Month": "2014-04", "Sales Territory": "Far West", "revenue": 591333.7}, {"Month": "2014-05", "Sales Territory": "Far West", "revenue": 640960.92}, {"Month": "2014-06", "Sales Territory": "Far West", "revenue": 449573.73}, {"Month": "2014-07", "Sales Territory": "Far West", "revenue": 660248.63}, {"Month": "2014-08", "Sales Territory": "Far West", "revenue": 477720.04}, {"Month": "2014-09", "Sales Territory": "Far West", "revenue": 547215.74}, {"Month": "2014-10", "Sales Territory": "Far West", "revenue": 590079.96}, {"Month": "2014-11", "Sales Territory": "Far West", "revenue": 549573.41}, {"Month": "2014-12", "Sales Territory": "Far West", "revenue": 558633.98}, {"Month": "2015-01", "Sales Territory": "Far West", "revenue": 560422.11}, {"Month": "2015-02", "Sales Territory": "Far West", "revenue": 647839.7}, {"Month": "2015-03", "Sales Territory": "Far West", "revenue": 642430.34}, {"Month": "2015-04", "Sales Territory": "Far West", "revenue": 675347.59}, {"Month": "2015-05", "Sales Territory": "Far West", "revenue": 562504.29}, {"Month": "2015-06", "Sales Territory": "Far West", "revenue": 606479.1}, {"Month": "2015-07", "Sales Territory": "Far West", "revenue": 687450.14}, {"Month": "2015-08", "Sales Territory": "Far West", "revenue": 484458.94}, {"Month": "2015-09", "Sales Territory": "Far West", "revenue": 596601.98}, {"Month": "2015-10", "Sales Territory": "Far West", "revenue": 636521.4400000001}, {"Month": "2015-11", "Sales Territory": "Far West", "revenue": 507114.92}, {"Month": "2015-12", "Sales Territory": "Far West", "revenue": 692864.09}, {"Month": "2016-01", "Sales Territory": "Far West", "revenue": 610762.89}, {"Month": "2016-02", "Sales Territory": "Far West", "revenue": 500290.16}, {"Month": "2016-03", "Sales Territory": "Far West", "revenue": 578025.51}, {"Month": "2016-04", "Sales Territory": "Far West", "revenue": 488739.76}, {"Month": "2016-05", "Sales Territory": "Far West", "revenue": 610638.66}]};
+const COLORS = ['#3ddc97','#f59e3a','#a78bfa','#60a5fa','#f472b6','#fbbf24','#34d399'];
+const fmt$ = n => n>=1e6?'$'+(n/1e6).toFixed(2)+'M': n>=1e3?'$'+(n/1e3).toFixed(1)+'K':'$'+Math.round(n);
+const fmtN = n => n>=1e6?(n/1e6).toFixed(2)+'M': n>=1e3?(n/1e3).toFixed(1)+'K':n;
+Chart.defaults.color = '#9aa0b4';
+Chart.defaults.borderColor = '#2f3242';
+Chart.defaults.font.family = '-apple-system,BlinkMacSystemFont,Inter,sans-serif';
+
+let state = { year:'All', metric:'revenue' };
+let charts = {};
+
+function destroy(id){ if(charts[id]){charts[id].destroy(); delete charts[id];} }
+
+function filtered(){
+  const m = state.year==='All'?DATA.monthly:DATA.monthly.filter(r=>String(r.Month).startsWith(state.year));
+  const q = state.year==='All'?DATA.quarterly:DATA.quarterly.filter(r=>String(r.Quarter).startsWith(state.year));
+  let kpi;
+  if(state.year==='All') kpi = DATA.kpis;
+  else {
+    const rev=m.reduce((a,r)=>a+r.revenue,0), prof=m.reduce((a,r)=>a+r.profit,0),
+          ord=m.reduce((a,r)=>a+r.orders,0), qty=m.reduce((a,r)=>a+r.quantity,0);
+    kpi = {revenue:rev,profit:prof,orders:ord,quantity:qty,avgOrder:rev/Math.max(ord,1),margin:prof/Math.max(rev,1),customers:DATA.kpis.customers,items:DATA.kpis.items};
+  }
+  return {m,q,kpi};
+}
+
+function renderYears(){
+  const ys = ['All', ...DATA.yearly.map(y=>String(y.Year)).sort()];
+  document.getElementById('years').innerHTML = ys.map(y=>`<button data-y="${y}" class="${y===state.year?'active':''}">${y}</button>`).join('');
+  document.querySelectorAll('#years button').forEach(b=>b.onclick=()=>{state.year=b.dataset.y;renderAll();});
+}
+
+function renderKpis(kpi){
+  const items = [
+    {label:'Revenue', val:fmt$(kpi.revenue), sub:kpi.orders.toLocaleString()+' orders', c:'var(--c1)'},
+    {label:'Profit', val:fmt$(kpi.profit), sub:(kpi.margin*100).toFixed(1)+'% margin', c:'var(--c3)'},
+    {label:'Units Sold', val:fmtN(kpi.quantity), sub:'avg order '+fmt$(kpi.avgOrder), c:'var(--c2)'},
+    {label:'Avg Margin', val:(kpi.margin*100).toFixed(1)+'%', sub:kpi.customers+' customers', c:'var(--c4)'},
+  ];
+  document.getElementById('kpis').innerHTML = items.map(k=>`
+    <div class="card kpi"><div class="glow" style="background:${k.c}"></div>
+    <div class="label">${k.label}</div><div class="val">${k.val}</div><div class="sub2">${k.sub}</div></div>`).join('');
+}
+
+function renderTrend(m){
+  destroy('trend');
+  const ctx = document.getElementById('trend');
+  const grad = ctx.getContext('2d').createLinearGradient(0,0,0,260);
+  grad.addColorStop(0,'rgba(61,220,151,.5)'); grad.addColorStop(1,'rgba(61,220,151,0)');
+  charts.trend = new Chart(ctx,{type:'line',data:{labels:m.map(r=>r.Month),datasets:[{label:state.metric,data:m.map(r=>r[state.metric]),borderColor:'#3ddc97',backgroundColor:grad,borderWidth:2.5,fill:true,tension:.35,pointRadius:0,pointHoverRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>state.metric==='orders'?fmtN(v):fmt$(v)},grid:{color:'#2a2e3e'}},x:{grid:{display:false}}}}});
+  document.getElementById('trendSub').textContent = state.metric.toUpperCase()+' over time';
+}
+
+function renderCat(){
+  destroy('cat');
+  charts.cat = new Chart(document.getElementById('cat'),{type:'doughnut',data:{labels:DATA.byCategory.map(r=>r.Category),datasets:[{data:DATA.byCategory.map(r=>r.revenue),backgroundColor:COLORS,borderColor:'#1f2230',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}}}});
+}
+
+function renderTerr(){
+  destroy('terrStack');
+  const months = [...new Set(DATA.monthlyByTerritory.map(r=>r.Month))].sort();
+  const ms = state.year==='All'?months:months.filter(m=>m.startsWith(state.year));
+  const ts = [...new Set(DATA.monthlyByTerritory.map(r=>r['Sales Territory']))];
+  const ds = ts.map((t,i)=>({label:t,data:ms.map(m=>{const r=DATA.monthlyByTerritory.find(x=>x.Month===m&&x['Sales Territory']===t);return r?r.revenue:0;}),backgroundColor:COLORS[i%COLORS.length]+'cc',borderColor:COLORS[i%COLORS.length],borderWidth:1,fill:true,tension:.3,pointRadius:0}));
+  charts.terrStack = new Chart(document.getElementById('terrStack'),{type:'line',data:{labels:ms,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}},scales:{y:{stacked:true,ticks:{callback:fmt$},grid:{color:'#2a2e3e'}},x:{grid:{display:false}}}}});
+
+  destroy('terrBar');
+  charts.terrBar = new Chart(document.getElementById('terrBar'),{type:'bar',data:{labels:DATA.byTerritory.map(r=>r['Sales Territory']),datasets:[{data:DATA.byTerritory.map(r=>r.revenue),backgroundColor:DATA.byTerritory.map((_,i)=>COLORS[i%COLORS.length]),borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:fmt$},grid:{color:'#2a2e3e'}},y:{grid:{display:false}}}}});
+}
+
+function renderBars(id, list, key){
+  const max = list[0].revenue;
+  document.getElementById(id).innerHTML = list.slice(0,8).map((c,i)=>{
+    const pct=(c.revenue/max)*100;
+    return `<div class="row"><div class="top"><span class="name"><span class="rk">#${i+1}</span><span class="nm">${c[key]}</span></span><span class="v">${fmt$(c.revenue)}</span></div><div class="bar"><div style="width:${pct}%"></div></div></div>`;
+  }).join('');
+}
+
+function renderRest(q){
+  destroy('states');
+  const st = DATA.byState.slice(0,10);
+  charts.states = new Chart(document.getElementById('states'),{type:'bar',data:{labels:st.map(r=>r['State Province']),datasets:[{data:st.map(r=>r.revenue),backgroundColor:'#f59e3a',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:fmt$},grid:{color:'#2a2e3e'}},x:{ticks:{font:{size:9},maxRotation:60,minRotation:45},grid:{display:false}}}}});
+
+  destroy('emp');
+  charts.emp = new Chart(document.getElementById('emp'),{type:'bar',data:{labels:DATA.topEmployees.map(r=>r.Employee),datasets:[{data:DATA.topEmployees.map(r=>r.revenue),backgroundColor:'#a78bfa',borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:fmt$},grid:{color:'#2a2e3e'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+
+  destroy('bg');
+  charts.bg = new Chart(document.getElementById('bg'),{type:'pie',data:{labels:DATA.byBuyingGroup.map(r=>r['Buying Group']),datasets:[{data:DATA.byBuyingGroup.map(r=>r.revenue),backgroundColor:COLORS,borderColor:'#1f2230',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}}}});
+
+  destroy('qtr');
+  charts.qtr = new Chart(document.getElementById('qtr'),{type:'bar',data:{labels:q.map(r=>r.Quarter),datasets:[{label:'Revenue',data:q.map(r=>r.revenue),backgroundColor:'#3ddc97',borderRadius:6},{label:'Profit',data:q.map(r=>r.profit),backgroundColor:'#f59e3a',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}},scales:{y:{ticks:{callback:fmt$},grid:{color:'#2a2e3e'}},x:{grid:{display:false}}}}});
+
+  destroy('yr');
+  const yrs = [...DATA.yearly].sort((a,b)=>a.Year-b.Year);
+  charts.yr = new Chart(document.getElementById('yr'),{data:{labels:yrs.map(r=>r.Year),datasets:[
+    {type:'line',label:'Revenue',data:yrs.map(r=>r.revenue),borderColor:'#3ddc97',backgroundColor:'#3ddc97',borderWidth:3,tension:.3,yAxisID:'y'},
+    {type:'line',label:'Profit',data:yrs.map(r=>r.profit),borderColor:'#f59e3a',backgroundColor:'#f59e3a',borderWidth:3,tension:.3,yAxisID:'y'},
+    {type:'line',label:'Orders',data:yrs.map(r=>r.orders),borderColor:'#a78bfa',backgroundColor:'#a78bfa',borderWidth:2,borderDash:[5,3],tension:.3,yAxisID:'y1'},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}},scales:{y:{position:'left',ticks:{callback:fmt$},grid:{color:'#2a2e3e'}},y1:{position:'right',ticks:{callback:fmtN},grid:{display:false}},x:{grid:{display:false}}}}});
+}
+
+function renderAll(){
+  const {m,q,kpi} = filtered();
+  renderYears();
+  renderKpis(kpi);
+  renderTrend(m);
+  renderCat();
+  renderTerr();
+  renderBars('custBars', DATA.topCustomers, 'Customer');
+  renderBars('itemBars', DATA.topItems, 'Stock Item');
+  renderRest(q);
+  document.getElementById('sub').textContent = `Wide World Importers — ${DATA.kpis.orders.toLocaleString()} orders across ${DATA.kpis.customers} customers and ${DATA.kpis.items} stock items.`;
+  document.getElementById('f1').textContent = `Data from midterm.xlsx · ${DATA.kpis.orders.toLocaleString()} records`;
+  document.getElementById('f2').textContent = `${DATA.kpis.customers} customers · ${DATA.kpis.items} items`;
+}
+
+document.querySelectorAll('#metric button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#metric button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); state.metric=b.dataset.m;
+  renderTrend(filtered().m);
+});
+renderAll();
+</script>
+</body>
+</html>
