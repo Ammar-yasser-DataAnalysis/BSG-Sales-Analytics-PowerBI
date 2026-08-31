@@ -175,6 +175,10 @@ DimEmployee ──── FactSale ──── DimStockItem
                    USA Date (holidays reference)
                    Measure (DAX measures table)
 ```
+---
+## Data Model (Star Schema) Screenshots (Click to enlarge) :
+<img src="https://github.com/Ammar-yasser-DataAnalysis/BSG-Sales-Analytics-PowerBI/blob/main/Data%20Modeling.jpg">
+---
 
 | Table | Type | Key |
 |---|---|---|
@@ -187,6 +191,12 @@ DimEmployee ──── FactSale ──── DimStockItem
 | `USA Date` | Reference | Date (holidays) |
 | `Measure` | DAX Table | — |
 
+---
+## Dashboard Screenshots (Click to enlarge) :
+<img src="https://github.com/Ammar-yasser-DataAnalysis/BSG-Sales-Analytics-PowerBI/blob/main/Executive%20Financial%20Summary.jpg">
+<img src="https://github.com/Ammar-yasser-DataAnalysis/BSG-Sales-Analytics-PowerBI/blob/main/Srategic%20Market%20Analysis.jpg">
+<img src="https://github.com/Ammar-yasser-DataAnalysis/BSG-Sales-Analytics-PowerBI/blob/main/Data%20Quality%20%26%20Audit.jpg">
+<img src="https://github.com/Ammar-yasser-DataAnalysis/BSG-Sales-Analytics-PowerBI/blob/main/Conclusion.jpg">
 ---
 
 ## 🔍 Data Quality Findings
